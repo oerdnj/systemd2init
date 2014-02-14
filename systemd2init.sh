@@ -44,6 +44,8 @@ getenvironment() {
     [ -n "$RET" ] && echo $RET
 }
 
+[ -z "$1" ] && echo "usage: $0 <name>" && exit 1
+
 NAME=$1
 SYSTEMD_SERVICE="${NAME}.service"
 
