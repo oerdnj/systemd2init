@@ -78,6 +78,21 @@ case "$RELOAD_COMMAND" in
 	;;
 esac
 
+CUSTOM_STOP=false
+STOP_COMMAND="$(getcommand /Service/ExecStop)"
+case "$STOP_COMMAND" in
+    "") ;;
+    *)
+	CUSTOM_STOP=true
+	STOP_ARGS="$(getargs /Service/ExecStop)"
+	;;
+esac
+
+STARTPRE="$(getcommand /Service/ExecStartPre)$(getargs /Service/ExecStartPre)"
+STARTPOST="$(getcommand /Service/ExecStartPost)$(getargs /Service/ExecStartPost)"
+STOPPRE="$(getcommand /Service/ExecStopPre)$(getargs /Service/ExecStopPre)"
+STOPPOST="$(getcommand /Service/ExecStopPost)$(getargs /Service/ExecStopPost)"
+
 sed -e "s^#NAME#^$NAME^g;" \
     -e "s^#DESC#^$DESC^g;" \
     -e "s^#DAEMON#^$DAEMON^g;" \
@@ -92,5 +107,12 @@ sed -e "s^#NAME#^$NAME^g;" \
     -e "s^#CASE_RELOAD#^$CASE_RELOAD^g;" \
     -e "s^#CASE_RESTART#^$CASE_RESTART^g;" \
     -e "s^#USAGE#^$USAGE^g;" \
+    -e "s^#STARTPRE#^$STARTPRE^g;" \
+    -e "s^#STARTPOST#^$STARTPOST^g;" \
+    -e "s^#STOPPRE#^$STOPPRE^g;" \
+    -e "s^#STOPPOST#^$STOPPOST^g;" \
+    -e "s^#CUSTOM_STOP#^$CUSTOM_STOP^g;" \
+    -e "s^#STOP_COMMAND#^$STOP_COMMAND^g;" \
+    -e "s^#STOP_ARGS#^$STOP_ARGS^g;" \
 	< skeleton \
 	> debian/${NAME}.init.dh
