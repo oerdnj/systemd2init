@@ -1,16 +1,20 @@
 #!/bin/sh
+# vim:noet:sw=4:ts=4
 # Author: Ondřej Surý <ondrej@sury.org>
 
 lsconf() {
     RET=
-    aug_path="/files/lib/systemd/system//${SYSTEMD_SERVICE}${1}"
-    augtool -r "$(pwd)/debian" ls "$aug_path"
+	aug_path="/files/lib/systemd/system//${SYSTEMD_SERVICE}${1}"
+	[ -f "$SYSTEMD_SERVICE" ] && aug_path="/files$(pwd)//${SYSTEMD_SERVICE}${1}"
+	augtool -r "$WORKINGDIR" -t "Systemd incl $(pwd)/$SYSTEMD_SERVICE" ls "$aug_path"
 }
 
 getconf() {
     RET=
-    aug_path="/files/lib/systemd/system/${SYSTEMD_SERVICE}${1}"
-    augtool -r "$(pwd)/debian" get "$aug_path" | sed -e "s;^${aug_path}[[:space:]]*\((none)\|(o)\|= \)[[:space:]]*;;"
+	aug_path="/files/lib/systemd/system/${SYSTEMD_SERVICE}${1}"
+	[ -f "$SYSTEMD_SERVICE" ] && aug_path="/files$(pwd)/${SYSTEMD_SERVICE}${1}"
+	augtool -r "$WORKINGDIR" -t "Systemd incl $(pwd)/$SYSTEMD_SERVICE" get "$aug_path" | \
+		sed -e "s;^${aug_path}[[:space:]]*\((none)\|(o)\|= \)[[:space:]]*;;"
 }
 
 getcommand() {
@@ -37,7 +41,7 @@ getargs() {
 	fi
     done
     [ -n "$RET" ] && echo $RET
-}   
+}
 
 getenvironment() {
     RET="$(lsconf $1 | sed -e 's/ = /=/g')"
@@ -49,6 +53,18 @@ getenvironment() {
 NAME=$1
 SYSTEMD_SERVICE="${NAME}.service"
 
+if [ -f /etc/redhat-release ]; then
+	WORKINGDIR="$(pwd)"
+	SKELETON=skeleton.redhat
+	OUTPUT=$WORKINGDIR/${NAME}.init
+	DEFAULT_PIDFILE="/var/run/\$NAME.pid"
+else
+	WORKINGDIR="$(pwd)/debian"
+	SKELETON=skeleton.debian
+	OUTPUT=$WORKINGDIR/${NAME}.init.dh
+	DEFAULT_PIDFILE="/run/\$NAME.pid"
+fi
+
 DESC="$(getvalue /Unit/Description)"
 DAEMON="$(getcommand /Service/ExecStart)"
 [ -z "$DAEMON" ] && DAEMON="/usr/sbin/\$NAME"
@@ -56,7 +72,7 @@ DAEMON_ARGS="$(getargs /Service/ExecStart)"
 DAEMONIZE="$(getvalue /Service/X-Debian-Daemonize)"
 [ -n "$DAEMONIZE" ] && DAEMON_ARGS="$DAEMONIZE $DAEMON_ARGS"
 PIDFILE="$(getvalue /Service/PidFile)"
-[ -z "$PIDFILE" ] && PIDFILE="/run/\$NAME.pid"
+[ -z "$PIDFILE" ] && PIDFILE=$DEFAULT_PIDFILE
 ENVIRONMENT="$(getenvironment /Service/Environment)"
 ENVIRONMENTFILE="$(getvalue /Service/EnvironmentFile)"
 [ -z "$ENVIRONMENTFILE" ] && ENVIRONMENTFILE="/etc/default/\$NAME"
@@ -118,5 +134,5 @@ sed -e "s^#NAME#^$NAME^g;" \
     -e "s^#CUSTOM_STOP#^$CUSTOM_STOP^g;" \
     -e "s^#STOP_COMMAND#^$STOP_COMMAND^g;" \
     -e "s^#STOP_ARGS#^$STOP_ARGS^g;" \
-	< skeleton \
-	> debian/${NAME}.init.dh
+	< $SKELETON \
+	> $OUTPUT
