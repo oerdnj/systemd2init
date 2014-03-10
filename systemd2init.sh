@@ -76,7 +76,7 @@ if [ -f /etc/redhat-release ]; then
 else
 	WORKINGDIR="$(pwd)/debian"
 	SKELETON=skeleton.debian
-	OUTPUT=$WORKINGDIR/${NAME}.init.dh
+	OUTPUT=$WORKINGDIR/${NAME}.init
 	DEFAULT_PIDFILE="/run/\$NAME.pid"
 fi
 
